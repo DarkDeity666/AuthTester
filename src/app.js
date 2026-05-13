@@ -1,14 +1,15 @@
-import express from "express";
+import express, { json } from "express";
 import morgan from "morgan";
-// import dotenv from "dotenv"
+import authRouter from "./routes/auth.route.js"
 
 
 const app = express();
-// dotenv.config();
+//middelware
 app.use(morgan("dev"))
+app.use(express.json())
+app.use(express.urlencoded())
+
+app.use("api/auth",authRouter);
 
 
-
-
-
-export default app; 
+export default app;
