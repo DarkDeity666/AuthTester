@@ -6,12 +6,12 @@ const app = express();
 
 //middelware
 app.use(morgan("dev"))
-app.use(express.json({limit:"16kb"}))
-app.use(express.urlencoded({extended:true,limit:"16kb"}))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 
 //Routes
-app.use("api/auth",authRouter);
+app.use("/api/auth",authRouter);
 
 
 export default app;
