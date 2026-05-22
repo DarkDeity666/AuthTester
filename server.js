@@ -1,13 +1,13 @@
-import app from "./src/app.js" 
+import app from "./src/app.js"
 import dotenv from "dotenv"
 import dbConnect from "./src/config/database.js"
-
+import config from "./src/config/config.js"
 
 dotenv.config();
 dbConnect();
 
 
-app.listen(process.env.POR || 3001,()=>{
+app.listen(config.PORT || 3001, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
 
 })
