@@ -3,8 +3,9 @@ import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import config from "../config/config.js"
 import sessionModel from "../models/session.model.js"
-
-
+import sendEmail from "../services/email.service.js"
+import { generateOtp, getOtpHtml } from "../utils/otp.utils.js"
+import otpModel from "../models/otp.model.js"
 
 async function registerUser(req, res) {
     try {
@@ -33,35 +34,22 @@ async function registerUser(req, res) {
             password: hashedPassword
         })
 
-        const refreshToken = jwt.sign({id:user._id},{
-            expireIn:"7d"
-        })
-
-        const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
-
-        const session = await sessionModel.create({
+        const otp = generateOtp();
+        const html = getOtpHtml(otp);
+        const otpHash = crypto.createHash("sha256").update(otp).digest("hex")
+        const otpEntry = await otpModel.create({
+            email,
             user:user._id,
-            refreshTokenHash,
-            ip: req.ip,
-            userAgent:req.headers["user-agent"]
-        })
-
-        const accessToken = jwt.sign({
-            sessionId:session._id,
-            id: user._id
-
-        }, config.JWT_SECRET, {
-            expiresIn: "15m"
+            otpHash
         })
         
-
-        
-        res.cookie("refreshToken",refreshToken,{
-            httpOnly:true,secure:true,sameSite:"strict",
-            maxAge: 7*24*60*60*1000
-        })
         return res.status(201).json({
-            message:"User Registered Successfully..!"
+            message:"User Registered Successfully..!",
+            user:{
+                username:user.username,
+                email:user.email,
+                verified:user.verified
+            }
         })
 
     } catch (err) {
@@ -81,6 +69,12 @@ async function userLogin(req, res) {
         if(!user){
             return res.status(400).json({
                 message:"Invalid Password or email"
+            })
+        }
+
+        if(!user.verified){
+            return res.status(400).json({
+                message:"Please verify your email"
             })
         }
 
@@ -260,5 +254,47 @@ async function userlogoutAll(req,res){
         })
     }
 }
+async function otpVerification(req,res){
+    try{
+        const {otp,email} = req.body;
+        if(!otp||!email){
+            return res.status(400).json({
+                message:"All fields are required....!"
+            })
+        }
 
-export { registerUser, userLogin, getMe ,refreshToken,userLogout,userlogoutAll}
+        const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
+
+        const otpEntry = await otpModel.findOne({
+            otpHash,
+            email
+        })
+        if(!otpEntry){
+            return res.status(400).json({
+                message:"Invalid OTP....!"
+            })
+        }
+        
+        const user = await userModel.findOne({
+            email
+        })
+        if(!user){
+            return res.status(400).json({
+                message:"User Not Found....!"
+            })
+        }
+        user.verified = true;
+        await user.save();
+        await otpEntry.delete();
+        return res.status(200).json({
+            message:"OTP verified successfully....!"
+        })
+
+    }catch(err){
+        return res.status(500).json({
+            message:"Something went wrong....!"
+        })
+    }
+}
+
+export { registerUser, userLogin, getMe ,refreshToken,userLogout,userlogoutAll,otpVerification}
