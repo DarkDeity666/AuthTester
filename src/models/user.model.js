@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose"; 
 
 const userSchema = new mongoose.Schema({
@@ -5,7 +6,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         required :[true,"Username is required"],
         unique: true,
-        // trim: true
+
     },
     email:{
         type:String,
@@ -17,6 +18,10 @@ const userSchema = new mongoose.Schema({
     password:{
         type: String,
         required:[true,"password is required"]
+    },
+    verified:{
+        type: Boolean,
+        default: false
     }
     
 })
